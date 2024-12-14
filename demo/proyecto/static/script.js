@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentStream = null;
     let usingFront = false;
     let animationFrameId = null;
-    let lastPoint = null; // Almacenar el último punto recibido
+    let lastPoints = null; // Almacenar los últimos puntos recibidos
 
-    // Función para obtener el punto desde el backend
+    // Función para obtener los puntos desde el backend
     async function getPoint() {
         try {
             const response = await fetch('/get_point');
@@ -20,32 +20,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 return null;
             }
 
-            lastPoint = data; // Guardar el punto
-            return data;
+            lastPoints = data.points; // Guardar los puntos
+            return data.points;
         } catch (error) {
-            console.error('Error al obtener el punto:', error);
+            console.error('Error al obtener los puntos:', error);
             return null;
         }
     }
 
-    // Función para dibujar el punto
-    function drawPoint(ctx, dimensions, point) {
-        if (!point) return;
+    // Función para dibujar los puntos
+    function drawPoints(ctx, dimensions, points) {
+        if (!points) return;
 
-        // Calcular el punto escalado según las dimensiones
-        const scaledX = dimensions.x + point.x;
-        const scaledY = dimensions.y + point.y;
+        points.forEach((point, index) => {
+            // Calcular el punto escalado según las dimensiones
+            const scaledX = dimensions.x + point.x;
+            const scaledY = dimensions.y + point.y;
 
-        // Dibujar el punto verde
-        ctx.fillStyle = '#00FF00';
-        ctx.beginPath();
-        ctx.arc(scaledX, scaledY, 15, 0, 2 * Math.PI);
-        ctx.fill();
+            // Dibujar el punto con diferentes colores según el índice
+            const colors = ['#00FF00', '#FF0000', '#0000FF']; // Verde, Rojo, Azul
+            ctx.fillStyle = colors[index];
+            ctx.beginPath();
+            ctx.arc(scaledX, scaledY, 15, 0, 2 * Math.PI);
+            ctx.fill();
 
-        // Log de las coordenadas del punto
-        console.log('Punto dibujado:', {
-            original: point,
-            scaled: { x: scaledX, y: scaledY }
+            // Log de las coordenadas del punto
+            console.log(`Punto ${index + 1} dibujado:`, {
+                original: point,
+                scaled: { x: scaledX, y: scaledY }
+            });
         });
     }
 
@@ -89,10 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
             dimensions.height
         );
 
-        // Dibujar el último punto conocido mientras se obtiene uno nuevo
-        drawPoint(ctx, dimensions, lastPoint);
+        // Dibujar los últimos puntos conocidos mientras se obtienen nuevos
+        drawPoints(ctx, dimensions, lastPoints);
         
-        // Obtener nuevo punto de forma asíncrona
+        // Obtener nuevos puntos de forma asíncrona
         getPoint();
         
         animationFrameId = requestAnimationFrame(processVideo);
