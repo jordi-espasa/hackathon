@@ -30,12 +30,12 @@ def get_point():
         return jsonify({'error': 'Dimensiones no establecidas'})
     
     # Generar 3 puntos aleatorios dentro de las dimensiones del frame
-    points = []
-    for _ in range(3):
-        x = frame_dimensions['width']
-        y = frame_dimensions['height']/2
-        points.append({'x': x, 'y': y})
-    
+    points = [
+        {'x': frame_dimensions['width']/3, 'y': frame_dimensions['height']/2},
+        {'x': frame_dimensions['width'], 'y': frame_dimensions['height']},
+        {'x': 0, 'y': 0}
+    ]
+
     return jsonify({
         'points': points
     })

@@ -1,4 +1,18 @@
 // static/script.js
+// Añade esta función al inicio
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
@@ -33,22 +47,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!points) return;
 
         points.forEach((point, index) => {
-            // Calcular el punto escalado según las dimensiones
-            const scaledX = dimensions.x + point.x;
-            const scaledY = dimensions.y + point.y;
+            const scaledX = point.x;
+            const scaledY = point.y;
 
-            // Dibujar el punto con diferentes colores según el índice
-            const colors = ['#00FF00', '#FF0000', '#0000FF']; // Verde, Rojo, Azul
-            ctx.fillStyle = colors[index];
+            // Reducir el radio para un gradiente más concentrado
+            const gradient = ctx.createRadialGradient(
+                scaledX, scaledY, 0,    // Centro interno
+                scaledX, scaledY, 1000    // Radio exterior reducido (antes 300)
+            );
+
+            // Aumentar la opacidad inicial (0.2 -> 0.5)
+            const colors = [
+                ['rgba(0, 255, 0, 0.5)', 'rgba(0, 255, 0, 0)'],  // Verde
+                ['rgba(255, 0, 0, 0.5)', 'rgba(255, 0, 0, 0)'],  // Rojo
+                ['rgba(0, 0, 255, 0.5)', 'rgba(0, 0, 255, 0)']   // Azul
+            ];
+
+            gradient.addColorStop(0, colors[index][0]);
+            gradient.addColorStop(1, colors[index][1]);
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Punto central más visible
+            ctx.fillStyle = colors[index][0].replace('0.5', '1');
             ctx.beginPath();
             ctx.arc(scaledX, scaledY, 15, 0, 2 * Math.PI);
             ctx.fill();
-
-            // Log de las coordenadas del punto
-            console.log(`Punto ${index + 1} dibujado:`, {
-                original: point,
-                scaled: { x: scaledX, y: scaledY }
-            });
         });
     }
 
@@ -95,11 +120,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Dibujar los últimos puntos conocidos mientras se obtienen nuevos
         drawPoints(ctx, dimensions, lastPoints);
         
-        // Obtener nuevos puntos de forma asíncrona
-        getPoint();
+        // Throttle la llamada a getPoint cada 100ms
+        throttledGetPoint();
         
         animationFrameId = requestAnimationFrame(processVideo);
     }
+
+    // Crea la versión throttled de getPoint
+    const throttledGetPoint = throttle(getPoint, 1000); // 100ms entre llamadas
 
     // Iniciar la cámara
     async function startCamera(facingMode = 'environment') {
