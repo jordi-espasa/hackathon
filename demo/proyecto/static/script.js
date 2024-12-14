@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let usingFront = false;
     let animationFrameId = null;
     let lastPoints = null; // Almacenar los últimos puntos recibidos
+    let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
 
     // Función para obtener los puntos desde el backend
     async function getPoint() {
@@ -127,7 +128,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Crea la versión throttled de getPoint
-    const throttledGetPoint = throttle(getPoint, 1000); // 100ms entre llamadas
+    const throttledGetPoint = throttle(async () => {
+        try {
+            const response = await fetch('/get_point', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orientation: deviceOrientation
+                })
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                console.error('Error:', data.error);
+                return null;
+            }
+
+            lastPoints = data.points;
+            return data.points;
+        } catch (error) {
+            console.error('Error al obtener los puntos:', error);
+            return null;
+        }
+    }, 100);
 
     // Iniciar la cámara
     async function startCamera(facingMode = 'environment') {
@@ -176,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event Listeners
     startBtn.addEventListener('click', async () => {
+        await requestOrientationPermission();
         startCamera(usingFront ? 'user' : 'environment');
     });
 
@@ -201,4 +227,28 @@ document.addEventListener('DOMContentLoaded', function() {
             canvas.height = window.innerHeight;
         }
     });
+
+    // Add event listener for device orientation
+    window.addEventListener('deviceorientation', throttle((event) => {
+        deviceOrientation = {
+            alpha: event.alpha, // Z axis rotation
+            beta: event.beta,   // X axis rotation
+            gamma: event.gamma  // Y axis rotation
+        };
+    }, 100));
+
+    // Add this at the beginning of your DOMContentLoaded event listener
+    async function requestOrientationPermission() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission !== 'granted') {
+                    console.error('Permiso de orientación denegado');
+                }
+            } catch (error) {
+                console.error('Error al solicitar permiso de orientación:', error);
+            }
+        }
+    }
 });

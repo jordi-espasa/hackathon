@@ -10,6 +10,12 @@ frame_dimensions = {
     'height': None
 }
 
+device_orientation = {
+    'alpha': 0,
+    'beta': 0,
+    'gamma': 0
+}
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -24,16 +30,32 @@ def set_dimensions():
         'dimensions': frame_dimensions
     })
 
-@app.route('/get_point')
+@app.route('/get_point', methods=['POST'])
 def get_point():
     if frame_dimensions['width'] is None or frame_dimensions['height'] is None:
         return jsonify({'error': 'Dimensiones no establecidas'})
     
-    # Generar 3 puntos aleatorios dentro de las dimensiones del frame
+    # Get orientation data from request
+    data = request.json
+    if data and 'orientation' in data:
+        device_orientation.update(data['orientation'])
+        print(device_orientation)
+    
+    # You can now use device_orientation to modify your points logic
+    # For example:
     points = [
-        {'x': frame_dimensions['width']/3, 'y': frame_dimensions['height']/2},
-        {'x': frame_dimensions['width'], 'y': frame_dimensions['height']},
-        {'x': 0, 'y': 0}
+        {
+            'x': frame_dimensions['width']/3 + device_orientation['gamma'] * 10, 
+            'y': frame_dimensions['height']/2 + device_orientation['beta'] * 10
+        },
+        # {
+        #     'x': frame_dimensions['width'] + device_orientation['gamma'] * 10, 
+        #     'y': frame_dimensions['height'] + device_orientation['beta'] * 10
+        # },
+        # {
+        #     'x': device_orientation['gamma'] * 10, 
+        #     'y': device_orientation['beta'] * 10
+        # }
     ]
 
     return jsonify({
