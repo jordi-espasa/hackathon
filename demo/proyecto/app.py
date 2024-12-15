@@ -15,6 +15,11 @@ device_orientation = {
     'beta': 0,
     'gamma': 0
 }
+initial_orientation = {
+    'alpha': 0,
+    'beta': 0,
+    'gamma': 0
+}
 
 @app.route('/')
 def index():
@@ -39,23 +44,34 @@ def get_point():
     data = request.json
     if data and 'orientation' in data:
         device_orientation.update(data['orientation'])
-        print(device_orientation)
+        print(device_orientation['alpha'])
+
+    # Save initial orientation on first request
+    if not hasattr(app, 'initial_orientation'):
+        initial_orientation = {
+            'alpha': device_orientation['alpha'],
+            'beta': device_orientation['beta'], 
+            'gamma': device_orientation['gamma']
+        }
     
     # You can now use device_orientation to modify your points logic
     # For example:
+    new_y = (device_orientation['alpha'] - 90)/0.13
+    new_y_2  = (device_orientation['alpha'] - 180)/0.13
+    new_y_3 = (device_orientation['alpha'])/0.13
     points = [
         {
-            'x': frame_dimensions['width']/3 + device_orientation['gamma'] * 10, 
-            'y': frame_dimensions['height']/2 + device_orientation['beta'] * 10
+            'x': 200, 
+            'y': new_y,
         },
-        # {
-        #     'x': frame_dimensions['width'] + device_orientation['gamma'] * 10, 
-        #     'y': frame_dimensions['height'] + device_orientation['beta'] * 10
-        # },
-        # {
-        #     'x': device_orientation['gamma'] * 10, 
-        #     'y': device_orientation['beta'] * 10
-        # }
+        {
+            'x': 200, 
+            'y': new_y_2
+        },
+        {
+            'x': 200, 
+            'y': new_y_3
+        }
     ]
 
     return jsonify({
